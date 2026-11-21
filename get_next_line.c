@@ -6,44 +6,65 @@
 /*   By: jbustos- <jbustos-@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/07 10:58:01 by jbustos-          #+#    #+#             */
-/*   Updated: 2026/10/15 20:24:00 by jbustos-         ###   ########.fr       */
+/*   Updated: 2026/11/21 15:35:13 by jbustos-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-char	*get_next_line(int fd)
+static char	*ft_free_all(char *s1, char *s2)
 {
-	char		*buffer;
-	static char	*save;
-	int			n;
-	char        *temp;
-	char		*line;
+	if (s1)
+		free(s1);
+	if (s2)
+		free(s2);
+	return (NULL);
+}
 
-	temp = NULL;
-	buffer = malloc(11);
+static char	*ft_read_save(int fd, char *save)
+{
+	char	*buffer;
+	char	*temp;
+	int		n;
+
+	buffer = malloc(sizeof(char) * (BUFFER_SIZE + 1));
 	if (!buffer)
-		return(NULL);
-printf("llego 1\n");
-	while(!ft_strchr(save, '\n'))
+		return (ft_free_all(save, NULL));
+	n = 1;
+	while (!ft_strchr(save, '\n') && n > 0)
 	{
-		n = read(fd, buffer, 10);
+		n = read(fd, buffer, BUFFER_SIZE);
 		if (n < 0)
-		{
-			printf("llego 2\n");
-			free(buffer);
-			return (NULL);
-		}
-		if (n == 0)
-        	break;
+			return (ft_free_all(buffer, save));
 		buffer[n] = '\0';
 		temp = save;
 		save = ft_strjoin(temp, buffer);
 		if (temp)
 			free(temp);
+		if (!save)
+			return (ft_free_all(buffer, NULL));
 	}
-	printf("llego 3\n");
-	line = ft_line(save);
 	free(buffer);
-	return (line); 
+	return (save);
+}
+
+char	*get_next_line(int fd)
+{
+	static char	*save;
+	char		*line;
+
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (NULL);
+	save = ft_read_save(fd, save);
+	if (!save)
+		return (NULL);
+	line = ft_line(save);
+	if (!line)
+	{
+		free(save);
+		save = NULL;
+		return (NULL);
+	}
+	save = ft_clean_save(save);
+	return (line);
 }
